@@ -296,18 +296,68 @@ class LCDRenderer:
         pygame.draw.arc(surface, LCD_BG, (base[0] - 22, base[1] - 5, 44, 20), 0.2, 2.9, 3)
 
     def _draw_diver(self, surface: pygame.Surface, game) -> None:
-        if game.diver_pos == POS_BOAT:
-            return
         x, y = self._screen_point(*self.DIVER_POSITIONS.get(game.diver_pos, self.DIVER_POSITIONS[POS_BOAT]))
         color = BODY_RED if game.is_caught and int(game.caught_timer * 8) % 2 else LCD_SEGMENT
-        pygame.draw.circle(surface, color, (x, y - 13), 6)
-        pygame.draw.line(surface, color, (x, y - 6), (x, y + 17), 4)
-        pygame.draw.line(surface, color, (x, y), (x - 12, y + 8), 3)
-        pygame.draw.line(surface, color, (x, y), (x + 12, y + 8), 3)
-        pygame.draw.line(surface, color, (x, y + 16), (x - 9, y + 28), 3)
-        pygame.draw.line(surface, color, (x, y + 16), (x + 9, y + 28), 3)
+        self._draw_diver_sprite(surface, (x, y), color, game.diver_pos)
         if game.has_gold:
             pygame.draw.circle(surface, GOLD, (x + 14, y + 14), 6)
+
+    def _draw_diver_sprite(
+        self,
+        surface: pygame.Surface,
+        center: tuple[int, int],
+        color: tuple[int, int, int],
+        position: int,
+    ) -> None:
+        """Небольшой пиксельный силуэт водолаза, читаемый на LCD.
+
+        Это маска, а не набор сглаженных линий: поэтому стартовая поза и
+        четыре позы движения выглядят частью одной визуальной системы.
+        """
+        if position == 0:
+            pattern = (
+                "   XX   ",
+                "  XXXX  ",
+                "   XX   ",
+                "  XXXXX ",
+                " XX XX  ",
+                "   XX   ",
+                "  X  X  ",
+                " XX  XX ",
+            )
+        elif position in (1, 4):
+            pattern = (
+                "   XX   ",
+                "  XXXX  ",
+                "   XX   ",
+                " XXXXX  ",
+                "   XXX  ",
+                "  XX XX ",
+                " XX   X ",
+            )
+        else:
+            pattern = (
+                "   XX   ",
+                "  XXXX  ",
+                "   XX   ",
+                " XXXXX  ",
+                "   XXX  ",
+                "  X XX  ",
+                " XX  X  ",
+            )
+
+        cell = 3
+        width = max(len(row) for row in pattern)
+        start_x = center[0] - width * cell // 2
+        start_y = center[1] - len(pattern) * cell // 2
+        for row, line in enumerate(pattern):
+            for column, value in enumerate(line):
+                if value == "X":
+                    pygame.draw.rect(
+                        surface,
+                        color,
+                        (start_x + column * cell, start_y + row * cell, cell, cell),
+                    )
 
     def _draw_status(self, surface: pygame.Surface, game, *, show_time: bool, muted: bool) -> None:
         if show_time:
