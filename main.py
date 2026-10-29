@@ -6,6 +6,7 @@ from __future__ import annotations
 import pygame
 
 from game_logic import GameLogic, MODE_A, MODE_B
+from clock_state import ClockState
 from lcd_renderer import LCDRenderer
 from sound_engine import SoundEngine
 
@@ -27,9 +28,9 @@ def run() -> None:
     clock = pygame.time.Clock()
 
     game = GameLogic(MODE_A)
+    clock_state = ClockState()
     renderer = LCDRenderer(WINDOW_SIZE)
     sound = SoundEngine()
-    show_time = False
     elapsed = 0.0
     running = True
 
@@ -45,34 +46,45 @@ def run() -> None:
                     if event.key == pygame.K_ESCAPE:
                         running = False
                     elif event.key == pygame.K_RIGHT:
-                        game.move_right()
+                        if not clock_state.active:
+                            game.move_right()
                     elif event.key == pygame.K_LEFT:
-                        game.move_left()
+                        if not clock_state.active:
+                            game.move_left()
                     elif event.key == pygame.K_SPACE:
                         game.restart_game(game.mode)
+                        clock_state.leave()
                         elapsed = 0.0
                     elif event.key == pygame.K_a:
                         game.restart_game(MODE_A)
+                        clock_state.leave()
                         elapsed = 0.0
                     elif event.key == pygame.K_b:
                         game.restart_game(MODE_B)
+                        clock_state.leave()
                         elapsed = 0.0
+                    elif event.key == pygame.K_t:
+                        clock_state.toggle()
                     elif event.key == pygame.K_m:
                         sound.toggle_mute()
                 elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     button = renderer.button_at(event.pos)
                     if button == "left":
-                        game.move_left()
+                        if not clock_state.active:
+                            game.move_left()
                     elif button == "right":
-                        game.move_right()
+                        if not clock_state.active:
+                            game.move_right()
                     elif button == "mode_a":
                         game.restart_game(MODE_A)
+                        clock_state.leave()
                         elapsed = 0.0
                     elif button == "mode_b":
                         game.restart_game(MODE_B)
+                        clock_state.leave()
                         elapsed = 0.0
                     elif button == "time":
-                        show_time = not show_time
+                        clock_state.toggle()
 
             _play_pending_sounds(game, sound)
             game.update(dt)
@@ -82,7 +94,8 @@ def run() -> None:
                 screen,
                 game,
                 elapsed=elapsed,
-                show_time=show_time,
+                show_time=clock_state.active,
+                clock_info=clock_state.display,
                 muted=not sound.enabled or not sound.available,
             )
             pygame.display.flip()

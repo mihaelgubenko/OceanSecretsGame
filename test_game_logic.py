@@ -10,6 +10,7 @@ from game_logic import (
     POS_BOAT,
     POS_CHEST,
     POS_RETURN,
+    POS_STEP2,
     TENTACLE_MAX_STAGE,
 )
 
@@ -59,6 +60,17 @@ class GameLogicTests(unittest.TestCase):
         self.assertFalse(game.is_caught)
         self.assertEqual(game.diver_pos, POS_BOAT)
 
+    def test_return_position_is_not_an_attack_zone(self):
+        game = GameLogic()
+        game.diver_pos = POS_RETURN
+        game.tentacles[2] = TENTACLE_MAX_STAGE
+        game._check_collision()
+        self.assertFalse(game.is_caught)
+
+        game.diver_pos = POS_STEP2
+        game._check_collision()
+        self.assertTrue(game.is_caught)
+
     def test_game_over_after_three_catches(self):
         game = GameLogic()
         for _ in range(3):
@@ -69,6 +81,7 @@ class GameLogicTests(unittest.TestCase):
                 game.update(2.0)
         self.assertTrue(game.is_game_over)
         self.assertEqual(game.lives, 0)
+        self.assertEqual(game.diver_pos, POS_BOAT)
 
     def test_life_refill_at_200_and_500(self):
         game = GameLogic()
